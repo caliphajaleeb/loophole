@@ -37,6 +37,13 @@ $obj3 = unserialize($stored); // DESER001 (dynamic data, medium)
 
 $obj4 = unserialize(file_get_contents('php://input')); // DESER001 (php://input)
 
+$copy = $prefs; // tainted copy
+$obj5 = unserialize($copy); // DESER001 (tainted var, copied)
+
+$obj6 = unserialize(
+    $_GET['multi']
+); // DESER001 (multiline tainted, high)
+
 $zip = new ZipArchive;
 $zip->open('up.zip');
 $zip->extractTo('/var/www/html'); // ZIP001

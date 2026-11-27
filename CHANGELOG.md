@@ -12,6 +12,11 @@ All notable changes to Loophole are documented here.
   is flagged **high** with the taint flow noted; dynamic data of unknown
   origin is still flagged, at **medium**. String literals,
   `['allowed_classes' => false]` and `json_decode()` stay silent.
+  Review fixes: multiline calls keep their severity, only
+  `allowed_classes => false` silences a call, taint propagates through
+  plain copies and is dropped on reassignment to trusted data, taint is
+  checked on the payload argument only, and sources named only in
+  comments do not taint a variable.
 
 ## 1.2.0 — 2026-11-27
 

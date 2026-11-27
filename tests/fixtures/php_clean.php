@@ -30,6 +30,7 @@ curl_exec($ch);
 $obj = unserialize($cache, ['allowed_classes' => false]); // DESER001-safe
 
 $serial = unserialize('a:2:{i:0;s:3:"foo";i:1;i:42;}'); // DESER001-safe: literal
+$lit2 = unserialize('a:0:{}', ['allowed_classes' => ['A']]); // DESER001-safe: literal payload + options
 $safe = json_decode($_GET['data'], true); // DESER001-safe: json_decode
 
 $ext = strtolower(pathinfo($_FILES['doc']['name'], PATHINFO_EXTENSION));
