@@ -176,6 +176,55 @@ class TestFixtures(unittest.TestCase):
             os.unlink(path)
 
 
+    def test_deser001_php_taint(self):
+        """DESER001 (PHP): unserialize() is high + tainted on user input,
+        medium on dynamic data of unknown origin, and silent on string
+        literals, allowed_classes and json_decode (issue #10)."""
+        sys.path.insert(0, ROOT)
+        import loophole
+        src = (
+            "<?php\n"
+            "$a = unserialize($_COOKIE['prefs']);\n"
+            "$prefs = $_POST['prefs'];\n"
+            "$b = unserialize($prefs);\n"
+            "$c = unserialize($stored);\n"
+            "$d = unserialize('a:1:{i:0;s:3:\"foo\";}');\n"
+            "$e = unserialize($x, ['allowed_classes' => false]);\n"
+            "$f = json_decode($_GET['data'], true);\n"
+            "$g = unserialize(file_get_contents('php://input'));\n"
+        )
+        with tempfile.NamedTemporaryFile(
+                suffix=".php", mode="w", delete=False) as tmp:
+            tmp.write(src)
+            path = tmp.name
+        try:
+            findings = [f for f in loophole.scan_file(path)
+                        if f.rule_id == "DESER001"]
+            by_line = {f.line: f for f in findings}
+            for ln in (2, 4, 9):
+                self.assertIn(ln, by_line,
+                              f"line {ln}: tainted unserialize() not "
+                              "flagged")
+                self.assertEqual(by_line[ln].severity, "high",
+                                 f"line {ln}: tainted unserialize() "
+                                 "should be high")
+                self.assertTrue(by_line[ln].taint,
+                                f"line {ln}: finding should carry a "
+                                "taint flow note")
+                self.assertIn("unserialize", by_line[ln].taint)
+            self.assertIn(5, by_line,
+                          "line 5: dynamic unserialize() not flagged")
+            self.assertEqual(by_line[5].severity, "medium",
+                             "line 5: untainted dynamic data should be "
+                             "medium, not high")
+            self.assertFalse(by_line[5].taint,
+                             "line 5: no taint flow should be recorded")
+            for ln in (6, 7, 8):
+                self.assertNotIn(ln, by_line,
+                                 f"line {ln}: safe counterpart flagged")
+        finally:
+            os.unlink(path)
+
     def test_ignore_suppression(self):
         """loophole:ignore (space and = forms, plus bare) silences rules."""
         sys.path.insert(0, ROOT)

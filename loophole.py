@@ -1459,13 +1459,36 @@ def rule_DESER001(ctx):
                 continue
             if is_string_literal(args):
                 continue  # unserializing a constant string: inert
-            out.append(ctx.hit(
-                "DESER001", "high", "unserialize() on dynamic data", i,
-                "PHP unserialize() on attacker-influenced strings enables "
-                "object injection — magic methods (__wakeup/__unserialize) "
-                "in any loaded class become attacker-controlled.",
-                "Use json_decode() for untrusted data, or pass "
-                "['allowed_classes' => false] to unserialize()."))
+            taint_var, taint_src = ctx.flow(args)
+            if taint_var or taint_src:
+                # Confirmed user-controlled input (direct superglobal or
+                # a variable assigned from one): object injection.
+                out.append(ctx.hit(
+                    "DESER001", "high",
+                    "unserialize() on user-controlled input", i,
+                    "PHP unserialize() on attacker-controlled strings "
+                    "enables object injection — magic methods "
+                    "(__wakeup/__unserialize) in any loaded class become "
+                    "attacker-controlled.",
+                    "Never unserialize user input; use json_decode/"
+                    "json_encode, or sign the payload (HMAC) and verify "
+                    "before unserializing.",
+                    taint=_taint_note(taint_var, taint_src,
+                                      "unserialize")))
+            else:
+                # Dynamic data whose origin is not visible in this file:
+                # dangerous if it is ever attacker-controlled, so still
+                # flagged, at lower severity than confirmed taint.
+                out.append(ctx.hit(
+                    "DESER001", "medium",
+                    "unserialize() on dynamic data", i,
+                    "PHP unserialize() on a string of unknown origin "
+                    "enables object injection if the data is ever "
+                    "attacker-controlled — magic methods "
+                    "(__wakeup/__unserialize) in any loaded class become "
+                    "attacker-controlled.",
+                    "Use json_decode() for untrusted data, or pass "
+                    "['allowed_classes' => false] to unserialize()."))
     elif ctx.lang == "js":
         pats = [r"\bserialize\.unserialize\s*\(",
                 r"require\s*\(\s*['\"]node-serialize['\"]\s*\)"]

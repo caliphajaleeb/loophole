@@ -2,6 +2,17 @@
 
 All notable changes to Loophole are documented here.
 
+## Unreleased
+
+### Taint & coverage
+
+- **DESER001 (PHP)** — `unserialize()` is now taint-aware (fixes #10):
+  input from a request superglobal (`$_GET`/`$_POST`/`$_REQUEST`/
+  `$_COOKIE`/`$_FILES`, `php://input`) or a variable assigned from one
+  is flagged **high** with the taint flow noted; dynamic data of unknown
+  origin is still flagged, at **medium**. String literals,
+  `['allowed_classes' => false]` and `json_decode()` stay silent.
+
 ## 1.2.0 — 2026-11-27
 
 ### New rules (61 → 62)
