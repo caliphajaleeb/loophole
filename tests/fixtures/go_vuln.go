@@ -42,7 +42,14 @@ func makeToken() string {
 }
 
 func insecureClient() {
-	tr := &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}} // TLS001
+	tr := &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}} // TLS004
+	_ = tr
+}
+
+func insecureClientMultiline() {
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // TLS004
+	}
 	_ = tr
 }
 
