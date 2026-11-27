@@ -117,3 +117,22 @@ def upload():
 
 
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")  # REDOS001-safe
+
+
+# --- Issue #6: Django / FastAPI taint sources (safe counterparts) ---
+# Django: tainted input used only as a query parameter, never in the SQL text.
+def django_get_user_safe(request):
+    uid = request.GET["id"]
+    cursor.execute("SELECT * FROM users WHERE id = %s", (uid,))  # SQLI002-safe
+
+
+# FastAPI: same, via request.query_params.
+async def fastapi_get_safe(request):
+    name = request.query_params["name"]
+    cursor.execute("SELECT * FROM users WHERE name = %s", (name,))  # SQLI002-safe
+
+
+# Django: tainted input passed as a subprocess argument list, no shell.
+def django_run_safe(request):
+    cmd = request.POST["cmd"]
+    subprocess.run(["/usr/bin/echo", cmd], shell=False)  # CMD002-safe
