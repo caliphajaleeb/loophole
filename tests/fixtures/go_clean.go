@@ -7,6 +7,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"database/sql"
+	"html/template"
 	"math/big"
 	"net/http"
 	"os/exec"
@@ -66,3 +67,11 @@ func rootCAsClient(pool *x509.CertPool) {
 	tr := &http.Transport{TLSClientConfig: &tls.Config{RootCAs: pool}} // TLS004-safe
 	_ = tr
 }
+
+func renderStatic() {
+	// XSS005-safe: static literals keep escaping bypass off the table
+	out := template.HTML("<b>hello</b>")
+	_ = out
+	_ = template.HTML(`<i>fixed markup</i>`)
+}
+
