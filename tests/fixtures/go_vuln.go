@@ -6,6 +6,7 @@ import (
 	"crypto/tls"
 	"database/sql"
 	"fmt"
+	"html/template"
 	"log"
 	"math/rand"
 	"net/http"
@@ -64,3 +65,12 @@ var emailRe = regexp.MustCompile(`^(a+)+$`) // REDOS001
 func logToken(token string) {
 	log.Printf("user token: %s", token) // LOG001
 }
+
+func renderBio(w http.ResponseWriter, r *http.Request) {
+	bio := r.URL.Query().Get("bio") // tainted
+	out := template.HTML(bio) // XSS005: escaping bypass on tainted input
+	_ = out
+	_ = template.HTML(r.URL.Query().Get("bio")) // XSS005 direct source
+	_ = template.HTML("<b>" + bio + "</b>") // XSS005 concatenation
+}
+
