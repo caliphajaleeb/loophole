@@ -57,3 +57,6 @@ include($up); // PATH001 ($_FILES taint)
 
 $raw = file_get_contents('php://input'); // tainted (php://input)
 eval($raw); // EVAL001 (php://input taint)
+
+$token = mt_rand(0, 999999); // RAND004 (weak randomness for token)
+
