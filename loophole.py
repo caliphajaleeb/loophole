@@ -141,6 +141,21 @@ def is_string_literal(arg):
     return False
 
 
+def is_single_string_literal(arg):
+    """True if arg is exactly one string literal (nothing else).
+
+    is_string_literal() is fooled by concatenation — '"a" + x + "b"'
+    starts and ends with a quote — so strip the literals first and
+    require that nothing but whitespace remains. Needed by rules that
+    must flag concatenations, e.g. template.HTML("<b>" + bio).
+    """
+    a = arg.strip()
+    code = re.sub(r'"(?:\\.|[^"\\])*"', '""', a)
+    code = re.sub(r'`[^`]*`', '``', code)
+    code = re.sub(r"'(?:\\.|[^'\\])*'", "''", code)
+    return not code.strip(" \t\"'`")
+
+
 def word_in(text, word):
     """Whole-word (or $var) occurrence check."""
     return re.search(r"(?<![\w$])" + re.escape(word) + r"(?![\w])", text) is not None
@@ -2575,12 +2590,37 @@ def rule_XXE002(ctx):
 
 
 # ---------------------------------------------------------------------------
-# XSS005 — framework HTML-injection sinks beyond innerHTML
+# XSS005 — framework HTML-injection sinks beyond innerHTML (JS), plus Go
+# html/template escaping bypass via template.HTML
 # ---------------------------------------------------------------------------
 
 def rule_XSS005(ctx):
-    """insertAdjacentHTML, Vue v-html, Angular bypassSecurityTrust*."""
+    """insertAdjacentHTML, Vue v-html, Angular bypassSecurityTrust* (js);
+    template.HTML() on dynamic values (go)."""
     out = []
+    if ctx.lang == "go":
+        go_why = ("template.HTML marks a string as trusted HTML, "
+                  "switching off html/template's automatic escaping. "
+                  "Anything user-controlled flowing into it is "
+                  "stored/reflected XSS — the same hole as innerHTML "
+                  "(XSS001) through a Go door.")
+        go_fix = ("Pass the value to the template as plain data and let "
+                  "html/template escape it; only wrap strings you fully "
+                  "control in template.HTML, or sanitize with bluemonday "
+                  "first.")
+        for i, line in enumerate(ctx.lines, 1):
+            args = call_args(line, r"template\.HTML")
+            if args is None:
+                continue
+            if is_single_string_literal(args):
+                continue  # static HTML string: safe
+            taint_var, taint_src = ctx.flow(args)
+            out.append(ctx.hit(
+                "XSS005", "high",
+                "Dynamic content via template.HTML (escaping bypass)", i,
+                go_why, go_fix,
+                taint=_taint_note(taint_var, taint_src, "template.HTML")))
+        return out
     why = ("These APIs inject raw HTML into the DOM, bypassing the "
            "framework's automatic escaping. With user-influenced "
            "content they are stored/reflected XSS — the same hole as "
@@ -2707,7 +2747,7 @@ RULES = [
     ("CMP001", ("js", "py", "go", "php"), rule_CMP001),
     ("REDIR002", ("js",), rule_REDIR002),
     ("XXE002", ("js",), rule_XXE002),
-    ("XSS005", ("js",), rule_XSS005),
+    ("XSS005", ("js", "go"), rule_XSS005),
     ("DESER002", ("js", "py"), rule_DESER002),
 ]
 
@@ -3218,3 +3258,4 @@ def main(argv=None):
 
 if __name__ == "__main__":
     sys.exit(main())
+
