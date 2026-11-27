@@ -206,6 +206,13 @@ TAINT_SOURCES = {
     # Python: web frameworks + stdin/argv
     "py": [
         r"request\.(args|form|json|data|values|cookies)\b",
+        # Django: request.GET/POST/FILES/body/COOKIES/META/headers.
+        # The lookbehind keeps myrequest.GET out while still matching
+        # self.request.GET; the trailing \b keeps request.GETTER out.
+        r"(?<![A-Za-z0-9_])request\.(GET|POST|FILES|body|COOKIES|META|headers)\b",
+        # FastAPI / Django REST framework request object.
+        r"(?<![A-Za-z0-9_])request\.(query_params|path_params)\b",
+        r"await\s+request\.(json|form)\s*\(",
         r"flask\s*\.\s*request\b",
         r"(?<![\w.])input\s*\(",
         r"sys\.argv\b",

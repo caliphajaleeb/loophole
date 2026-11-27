@@ -130,3 +130,33 @@ def ldap_lookup(user):
 EMAIL_RE = re.compile(r"(a+)+$")  # REDOS001
 
 doc = xml.dom.minidom.parseString(xml_data)  # XXE001
+
+
+# --- Issue #6: Django / FastAPI taint sources ---
+# Django: request.GET flows into a SQL query (taint-annotated finding).
+def django_get_user(request):
+    duser_id = request.GET["id"]  # tainted (Django)
+    cursor.execute("SELECT * FROM users WHERE id = %s" % duser_id)  # SQLI002 (tainted)
+
+
+# Django: request.GET used directly in the sink call (1-hop taint).
+def django_get_user_direct(request):
+    cursor.execute("SELECT * FROM users WHERE id IN (%s)" % request.GET["id"])  # SQLI002 (tainted)
+
+
+# Django: request.POST flows into a shell command.
+def django_run(request):
+    dcmd = request.POST["cmd"]  # tainted (Django)
+    os.system("ping -c1 " + dcmd)  # CMD002 critical (tainted)
+
+
+# FastAPI: request.query_params flows into a shell command.
+async def fastapi_run(request):
+    fname = request.query_params["name"]  # tainted (FastAPI)
+    os.system("echo " + fname)  # CMD002 critical (tainted)
+
+
+# FastAPI: await request.json() flows into a SQL query.
+async def fastapi_search(request):
+    body = await request.json()  # tainted (FastAPI)
+    cursor.execute("SELECT * FROM items WHERE sku = %s" % body["sku"])  # SQLI002 (tainted)
