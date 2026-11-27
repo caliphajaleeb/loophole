@@ -214,7 +214,7 @@ Loophole found 3 issue(s): 1 critical, 2 high, 0 medium
 | CMP001 | medium | Secret/token compared with `==`/`===` instead of a constant-time compare |
 | REDIR002 | medium | DOM open redirect — `location` assigned from user input (JS/TS) |
 | XXE002 | high | XXE — libxmljs entity expansion enabled (`noent`/`dtdload`) |
-| XSS005 | high | `insertAdjacentHTML`, Vue `v-html`, Angular `bypassSecurityTrust*` |
+| XSS005 | high | `insertAdjacentHTML`, Vue `v-html`, Angular `bypassSecurityTrust*`, Go `template.HTML()` on dynamic values |
 | DESER002 | high | `jsonpickle.decode` (Python) / `v8.deserialize` (JS) on dynamic data |
 
 Each finding carries: rule id, severity, `file:line`, code snippet, taint
@@ -366,3 +366,4 @@ clean (exit 0).
 ## License
 
 MIT — see `LICENSE`. Loophole is free and non-commercial: no paid tiers, no telemetry, no usage restrictions beyond the MIT terms.
+
