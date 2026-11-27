@@ -1306,7 +1306,6 @@ def rule_TLS001(ctx):
     pats = {
         "js": [r"rejectUnauthorized\s*:\s*false"],
         "py": [r"\bverify\s*=\s*False\b"],
-        "go": [r"InsecureSkipVerify\s*:\s*true"],
         "php": [r"CURLOPT_SSL_VERIFYPEER\s*,\s*false"],
     }
     return regex_rule(
@@ -2320,6 +2319,22 @@ def rule_TLS003(ctx):
 
 
 # ---------------------------------------------------------------------------
+# TLS004 — Go tls.Config with InsecureSkipVerify
+# ---------------------------------------------------------------------------
+
+def rule_TLS004(ctx):
+    """Go tls.Config disables certificate verification."""
+    pats = {
+        "go": [r"InsecureSkipVerify\s*:\s*true"],
+    }
+    return regex_rule(
+        ctx, "TLS004", "high", "Go TLS verification disabled (InsecureSkipVerify)", pats,
+        "InsecureSkipVerify: true turns off certificate validation, so "
+        "any man-in-the-middle can impersonate the server.",
+        "Remove InsecureSkipVerify and configure proper root CAs instead.")
+
+
+# ---------------------------------------------------------------------------
 # CORS002 — reflected Origin / credentials combined with wildcard
 # ---------------------------------------------------------------------------
 
@@ -2627,7 +2642,7 @@ def rule_DESER002(ctx):
 
 
 # ---------------------------------------------------------------------------
-# Rule registry — 61 rules
+# Rule registry — 62 rules
 # ---------------------------------------------------------------------------
 
 RULES = [
@@ -2664,7 +2679,7 @@ RULES = [
     ("AUTH001", ("js", "py"), rule_AUTH001),
     ("CORS001", ("js", "py", "go", "php"), rule_CORS001),
     ("JWT001", ("js", "py", "php"), rule_JWT001),
-    ("TLS001", ("js", "py", "go", "php"), rule_TLS001),
+    ("TLS001", ("js", "py", "php"), rule_TLS001),
     ("DBG001", ("js", "py", "php"), rule_DBG001),
     ("ERR001", ("js", "py", "go", "php"), rule_ERR001),
     ("PROTO001", ("js",), rule_PROTO001),
@@ -2686,6 +2701,7 @@ RULES = [
     ("COOKIE001", ("js", "py", "php"), rule_COOKIE001),
     ("RAND004", ("php",), rule_RAND004),
     ("TLS003", ("js", "py", "php"), rule_TLS003),
+    ("TLS004", ("go",), rule_TLS004),
     ("CORS002", ("js", "py", "go", "php"), rule_CORS002),
     ("CRLF001", ("js", "py", "php"), rule_CRLF001),
     ("CMP001", ("js", "py", "go", "php"), rule_CMP001),
@@ -3069,6 +3085,9 @@ def suggest_fix(finding, lines):
                       "InsecureSkipVerify: false")):
             if a in raw:
                 return raw, raw.replace(a, b), None
+    if rid == "TLS004" and "InsecureSkipVerify: true" in raw:
+        return raw, raw.replace("InsecureSkipVerify: true",
+                                "InsecureSkipVerify: false"), None
     if rid == "XSS001" and ".innerHTML =" in raw:
         return raw, raw.replace(".innerHTML =", ".textContent ="), \
             "only safe when you meant to insert text, not HTML"

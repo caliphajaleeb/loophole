@@ -52,7 +52,7 @@ EXPECTED = {
                    "CSRF001", "UPL001", "REDOS001", "JWT002", "TLS002",
                    "CRY005", "LOG001", "LDAP001", "HDR001"},
     "go_vuln.go": {"SQLI003", "CMD003", "CRY003", "CRY004", "RAND003",
-                   "TLS001", "TLS002", "REDOS001", "LOG001"},
+                   "TLS004", "TLS002", "REDOS001", "LOG001"},
     "php_vuln.php": {"SEC001", "SQLI004", "XSS004", "CMD004", "EVAL001",
                      "CRY001", "SSRF001", "TLS001", "PATH001",
                      "DESER001", "XXE001", "REDIR001", "ZIP001", "UPL001",
@@ -137,7 +137,7 @@ class TestFixtures(unittest.TestCase):
             [sys.executable, SCANNER, "scan", "--rules", "."],
             capture_output=True, text=True, cwd=ROOT)
         self.assertEqual(proc.returncode, 0)
-        self.assertIn("61 rules total", proc.stdout)
+        self.assertIn("62 rules total", proc.stdout)
 
     def test_no_rule_crashes(self):
         """Every rule function must run without raising (regression net for

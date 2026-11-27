@@ -5,6 +5,7 @@ import (
 	"crypto/aes"
 	"crypto/rand"
 	"crypto/tls"
+	"crypto/x509"
 	"database/sql"
 	"math/big"
 	"net/http"
@@ -58,5 +59,10 @@ var dateRe = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`) // REDOS001-safe
 
 func modernTLSClient() {
 	tr := &http.Transport{TLSClientConfig: &tls.Config{MinVersion: tls.VersionTLS12}} // TLS002-safe
+	_ = tr
+}
+
+func rootCAsClient(pool *x509.CertPool) {
+	tr := &http.Transport{TLSClientConfig: &tls.Config{RootCAs: pool}} // TLS004-safe
 	_ = tr
 }

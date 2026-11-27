@@ -182,6 +182,7 @@ Loophole found 3 issue(s): 1 critical, 2 high, 0 medium
 | COOKIE001 | medium | Cookie set without HttpOnly, or the flag explicitly disabled |
 | RAND004 | medium | `rand()`/`mt_rand()`/`uniqid()` for tokens/secrets (PHP) |
 | TLS003 | high | TLS validation off via `CERT_NONE`, unverified contexts, `VERIFYHOST=0`, `NODE_TLS_REJECT_UNAUTHORIZED=0` |
+| TLS004 | high | Go `tls.Config{InsecureSkipVerify: true}` |
 | CORS002 | high | CORS reflects any request Origin, or credentials combined with a wildcard origin |
 | CRLF001 | medium | HTTP header injection — user-influenced value written into a response header |
 | CMP001 | medium | Secret/token compared with `==`/`===` instead of a constant-time compare |
