@@ -232,6 +232,74 @@ class TestFixtures(unittest.TestCase):
             self.assertEqual(code, 0,
                              "only-medium findings should exit 0")
 
+    def test_loopholeignore(self):
+        """A .loopholeignore in the scanned root skips matching files
+        (name match, glob match, directory prefix); comments and blank
+        lines are ignored; removing the file restores the findings; the
+        JSON summary counts ignored files; --exclude still combines."""
+        vuln = 'API_KEY = "sk-live-abcdef1234567890"\n'
+        with tempfile.TemporaryDirectory() as d:
+            with open(os.path.join(d, "app.py"), "w") as fh:
+                fh.write(vuln)
+            with open(os.path.join(d, "skipme.py"), "w") as fh:
+                fh.write(vuln)
+            with open(os.path.join(d, "app.min.js"), "w") as fh:
+                fh.write(vuln)
+            os.mkdir(os.path.join(d, "generated"))
+            with open(os.path.join(d, "generated", "gen.py"), "w") as fh:
+                fh.write(vuln)
+            ignore = os.path.join(d, ".loopholeignore")
+            with open(ignore, "w") as fh:
+                fh.write("# ignore generated output and vendored files\n"
+                         "\n"
+                         "skipme.py\n"
+                         "*.min.js\n"
+                         "generated/\n")
+            code, findings = scan(d)
+            paths = {f["path"] for f in findings}
+            self.assertTrue(
+                any(p.endswith("app.py") for p in paths),
+                "app.py findings missing under .loopholeignore")
+            self.assertFalse(
+                any("skipme.py" in p or "app.min.js" in p or
+                    "generated" in p for p in paths),
+                f"ignored files still scanned: {sorted(paths)}")
+            self.assertEqual(code, 1)
+
+            with tempfile.NamedTemporaryFile(suffix=".json",
+                                             delete=False) as tmp:
+                out = tmp.name
+            try:
+                proc = subprocess.run(
+                    [sys.executable, SCANNER, "scan", d,
+                     "--json", out, "--no-color"],
+                    capture_output=True, text=True, cwd=ROOT)
+                self.assertEqual(proc.returncode, 1)
+                with open(out) as fh:
+                    data = json.load(fh)
+                self.assertEqual(data["summary"]["ignored"], 3,
+                                 "JSON summary should count the 3 "
+                                 "ignored files")
+            finally:
+                os.unlink(out)
+
+            # --exclude combines with the ignore file
+            code, findings = scan(d, "--exclude", "app.py")
+            self.assertEqual(findings, [],
+                             "--exclude did not combine with "
+                             ".loopholeignore")
+
+            # removing the file restores every finding
+            os.unlink(ignore)
+            code, findings = scan(d)
+            paths = {f["path"] for f in findings}
+            for name in ("app.py", "skipme.py", "app.min.js",
+                         os.path.join("generated", "gen.py")):
+                self.assertTrue(
+                    any(p.endswith(name) for p in paths),
+                    f"{name} findings did not return after removing "
+                    f".loopholeignore")
+
     def test_severity_validation(self):
         """An unsupported --severity fails fast with a clean CLI error
         (no traceback), and a bad severity level in .loophole.json is

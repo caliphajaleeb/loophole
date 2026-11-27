@@ -310,6 +310,32 @@ at any file) to tune the scan per project:
 A broken config file prints a warning and is ignored — a scan never
 dies because of its config.
 
+## Ignoring files (`.loopholeignore`)
+
+Commit a `.loopholeignore` in the directory you scan to skip files
+and directories, gitignore-style — one pattern per line:
+
+```
+# generated output and vendored files
+
+generated/
+*.min.js
+legacy.py
+```
+
+- A bare `name` matches a file or directory name at any depth.
+- A `path/` pattern matches everything under that directory.
+- `*` and `?` globs match a path component (`*.min.js`) or, when the
+  pattern contains a `/`, the path relative to the scanned root
+  (`generated/*`).
+- Blank lines and `#` comments are ignored.
+
+Ignored files are skipped during the walk exactly like excluded
+directories, and the count appears as `ignored` in the JSON summary
+(`summary.ignored`) and on the terminal. `--exclude` and the config
+`exclude` keep working and combine with the ignore file. Removing
+`.loopholeignore` restores the skipped findings.
+
 ## Baseline
 
 Adopting a scanner on an existing codebase usually means a wall of
