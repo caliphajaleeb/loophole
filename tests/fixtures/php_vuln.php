@@ -51,3 +51,9 @@ $cipher = 'aes-256-ecb'; // CRY005
 $enc = openssl_encrypt($data, 'aes-256-ecb', $key); // CRY005
 
 $ok = preg_match('/(a+)+$/', $input); // REDOS001
+
+$up = $_FILES['x']['name']; // tainted ($_FILES)
+include($up); // PATH001 ($_FILES taint)
+
+$raw = file_get_contents('php://input'); // tainted (php://input)
+eval($raw); // EVAL001 (php://input taint)

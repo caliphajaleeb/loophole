@@ -36,3 +36,7 @@ if (in_array($ext, ['pdf', 'png'], true)) { // UPL001-safe: allowlist
 }
 
 header('Location: /dashboard'); // REDIR001-safe: fixed target
+
+$safeName = basename($_FILES['up']['name']); // safe: basename strips directories
+$body = file_get_contents('php://input');
+$payload = json_decode($body, true); // safe: decoded, never executed
