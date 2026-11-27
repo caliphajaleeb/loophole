@@ -1416,6 +1416,19 @@ def rule_DESER001(ctx):
                     "crafted document.",
                     "Use yaml.safe_load(), or pass Loader=yaml.SafeLoader "
                     "explicitly."))
+            elif re.search(r"\bshelve\.open\s*\(", line):
+                args = call_args(line, r"\bshelve\.open")
+                if args is None or is_string_literal(_first_arg(args)):
+                    continue
+                out.append(ctx.hit(
+                    "DESER001", "high",
+                    "shelve DB opened on dynamic path", i,
+                    "shelve stores values pickled — opening a database "
+                    "file chosen by user input lets an attacker point it "
+                    "at a crafted db whose values execute code on read.",
+                    "Never let untrusted input choose the shelve path — "
+                    "use a fixed path under your data directory, and "
+                    "prefer JSON or SQLite for untrusted data."))
     elif ctx.lang == "php":
         for i, line in enumerate(ctx.lines, 1):
             args = call_args(line, r"\bunserialize")

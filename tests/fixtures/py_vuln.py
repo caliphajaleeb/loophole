@@ -75,6 +75,7 @@ if __name__ == '__main__':
 
 # --- 2026 expansion: new-rule coverage ---
 import pickle
+import shelve
 import yaml
 import zipfile
 import ssl
@@ -87,6 +88,7 @@ from pymongo import MongoClient
 
 blob = pickle.loads(data)  # DESER001
 cfg = yaml.load(text)  # DESER001 (no SafeLoader)
+db = shelve.open(user_path)  # DESER001
 
 zipfile.ZipFile(f).extractall('/tmp/out')  # ZIP001
 
