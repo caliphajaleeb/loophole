@@ -206,6 +206,8 @@ TAINT_SOURCES = {
     # PHP: superglobals
     "php": [
         r"\$_(GET|POST|REQUEST|COOKIE)\b",
+        r"\$_FILES\b",
+        r"php://input\b",
     ],
 }
 
