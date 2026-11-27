@@ -38,8 +38,8 @@ def rule_ids(findings):
 # rule -> fixtures that must trigger it (subset assertion: each listed rule
 # must appear at least once in the fixture's findings)
 EXPECTED = {
-    "js_vuln.js": {"SEC001", "SQLI001", "AUTH001", "XSS001", "XSS003",
-                   "CMD001", "EVAL001", "JWT001", "CORS001", "TLS001",
+    "js_vuln.js": {"SEC001", "SQLI001", "AUTH001", "XSS001", "XSS002", "XSS003",
+                   "CMD001", "EVAL001", "EVAL002", "JWT001", "CORS001", "TLS001",
                    "ERR001", "RAND001",
                    "PROTO001", "NOSQL001", "REDIR001", "JWT002", "UPL001",
                    "REDOS001", "LOG001", "ZIP001", "TLS002", "CRY005",

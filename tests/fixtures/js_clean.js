@@ -74,3 +74,7 @@ function findAlice() {
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/; // REDOS001-safe
 
 console.log('server started'); // LOG001-safe: no sensitive values
+
+// Static code construction — plain literals, must NOT flag (EVAL002/XSS002-safe)
+const staticFn = new Function('return 1 + 1');
+document.write('<p>hello</p>');

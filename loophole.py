@@ -693,7 +693,7 @@ def rule_XSS002(ctx):
     """document.write with dynamic content."""
     out = []
     for i, line in enumerate(ctx.lines, 1):
-        args = call_args(line, r"document\.writeln?")
+        args = call_args(line, r"document\.write(?:ln)?")
         if args is None or is_string_literal(args):
             continue
         taint_var, taint_src = ctx.flow(args)

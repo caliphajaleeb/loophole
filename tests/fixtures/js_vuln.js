@@ -37,6 +37,12 @@ app.get('/calc', (req, res) => {
   res.send(String(eval(req.query.expr))); // EVAL001 critical (tainted)
 });
 
+app.get('/dynamic', (req, res) => {
+  const fn = new Function('return ' + req.query.expr); // EVAL002 (dynamic)
+  document.write(`<h1>${req.query.name}</h1>`); // XSS002 (dynamic)
+  res.send('ok');
+});
+
 app.get('/me', (req, res) => {
   const token = jwt.decode(req.headers.authorization); // JWT001
   if (token && token.admin) return res.json({ ok: true });
