@@ -56,7 +56,8 @@ EXPECTED = {
     "php_vuln.php": {"SEC001", "SQLI004", "XSS004", "CMD004", "EVAL001",
                      "CRY001", "SSRF001", "TLS001", "PATH001",
                      "DESER001", "XXE001", "REDIR001", "ZIP001", "UPL001",
-                     "REDOS001", "TLS002", "CRY005", "LOG001", "LDAP001"},
+                     "REDOS001", "TLS002", "CRY005", "LOG001", "LDAP001",
+                     "RAND004"},
     "mixed_vuln.py": {"SEC003", "SEC004", "SEC005", "PATH002", "CORS001",
                       "DBG001"},
     "v2_vuln.js": {"SSTI001", "COOKIE001", "TLS003", "CORS002", "CRLF001",
@@ -308,3 +309,4 @@ class TestFixtures(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
+
