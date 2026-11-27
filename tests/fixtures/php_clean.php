@@ -40,3 +40,7 @@ header('Location: /dashboard'); // REDIR001-safe: fixed target
 $safeName = basename($_FILES['up']['name']); // safe: basename strips directories
 $body = file_get_contents('php://input');
 $payload = json_decode($body, true); // safe: decoded, never executed
+
+$token = bin2hex(random_int(0, PHP_INT_MAX)); // RAND004-safe: CSPRNG
+$otp = random_int(100000, 999999); // RAND004-safe: CSPRNG
+
