@@ -52,7 +52,7 @@ EXPECTED = {
                    "CSRF001", "UPL001", "REDOS001", "JWT002", "TLS002",
                    "CRY005", "LOG001", "LDAP001", "HDR001"},
     "go_vuln.go": {"SQLI003", "CMD003", "CRY003", "CRY004", "RAND003",
-                   "TLS004", "TLS002", "REDOS001", "LOG001"},
+                   "TLS004", "TLS002", "REDOS001", "LOG001", "XSS005"},
     "php_vuln.php": {"SEC001", "SQLI004", "XSS004", "CMD004", "EVAL001",
                      "CRY001", "SSRF001", "TLS001", "PATH001",
                      "DESER001", "XXE001", "REDIR001", "ZIP001", "UPL001",
@@ -308,3 +308,4 @@ class TestFixtures(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
+
