@@ -33,6 +33,15 @@ app.get('/profile', (req, res) => {
   document.getElementById('bio').textContent = bio;
 });
 
+app.get('/feed', (req, res) => {
+  const name = req.body.name;
+  document.getElementById('feed').innerHTML += '<b>static</b>'; // XSS001-safe: static literal (+=)
+  document.getElementById('feed').textContent += name; // textContent: safe
+  if (document.getElementById('feed').innerHTML == '<b>x</b>') { // comparison, not assignment: must NOT flag
+    res.send('match');
+  }
+});
+
 app.get('/run', requireAuth, (req, res) => {
   execFile('/usr/bin/convert', ['input.png', 'out.png'], (err, out) => {
     res.send('done');
