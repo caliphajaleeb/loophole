@@ -66,6 +66,32 @@ python3 loophole.py scan ./src --severity critical --exclude 'tests/*'
 Exit code is **1** when any critical/high finding exists (CI-friendly),
 **0** otherwise.
 
+## Docker
+
+No local Python needed — scan from the container image instead.
+The image is `python:3.12-slim`, contains only `loophole.py`
+(stdlib only, no extra dependencies), and runs as a non-root user.
+
+```bash
+docker build -t loophole .
+docker run --rm -v "$PWD:/src" loophole scan /src
+```
+
+That mounts the current directory at `/src` inside the container
+and scans it. The exit code is the same as the local scanner:
+**1** when any critical/high finding exists, **0** otherwise.
+
+Scan a single file or a different directory the same way:
+
+```bash
+docker run --rm -v "$PWD:/src" loophole scan /src/tests/fixtures/py_vuln.py
+docker run --rm -v "$PWD:/src" loophole scan /src --json /src/report.json
+```
+
+Note: with `--json`, `--sarif` or `--html`, write the report to a
+path under `/src` so the file lands in your mounted directory.
+
+
 ## GitHub Action
 
 Run Loophole on every push and pull request, with findings uploaded to
@@ -317,6 +343,7 @@ file/line, the code snippet, why it matters and the fix.
 ```
 loophole/
 ├── loophole.py            # the scanner (single file, stdlib only)
+├── Dockerfile               # container image: python:3.12-slim, non-root, stdlib only
 ├── loophole                # shell wrapper: loophole scan <path>
 ├── README.md
 └── tests/
