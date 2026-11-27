@@ -668,8 +668,8 @@ def _sqli_php(ctx):
 # ---------------------------------------------------------------------------
 
 def rule_XSS001(ctx):
-    """innerHTML / outerHTML assigned dynamic content."""
-    pats = {"js": [r"\.(innerHTML|outerHTML)\s*=\s*(?![\"'`]\s*;)"]}
+    """innerHTML / outerHTML assigned (+=) dynamic content."""
+    pats = {"js": [r"\.(innerHTML|outerHTML)\s*\+?=(?!=)\s*(?![\"'`]\s*;)"]}
     findings = []
     for i, line in enumerate(ctx.lines, 1):
         m = re.search(pats["js"][0], line)

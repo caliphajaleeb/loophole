@@ -22,6 +22,12 @@ app.get('/profile', (req, res) => {
   document.getElementById('bio').innerHTML = bio; // XSS001 (tainted)
 });
 
+app.get('/feed', (req, res) => {
+  const name = req.query.name;
+  document.getElementById('feed').innerHTML += `<div>${name}</div>`; // XSS001 (+= interpolated)
+  document.getElementById('card').outerHTML += name; // XSS001 (+= variable)
+});
+
 app.get('/page', (req, res) => {
   const el = document.createElement('div');
   el.innerHTML = '<b>static</b>'; // OK — static literal, must NOT flag
