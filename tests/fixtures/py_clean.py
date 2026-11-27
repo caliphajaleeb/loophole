@@ -88,6 +88,7 @@ import zipfile
 from werkzeug.utils import secure_filename
 
 cfg = yaml.safe_load(text)  # DESER001-safe
+cfg2 = yaml.load(text, Loader=yaml.SafeLoader)  # DESER001-safe
 
 
 def unzip(zf, dest):
