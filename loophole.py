@@ -2790,6 +2790,73 @@ def load_config(explicit_path, root):
     return cfg
 
 
+def load_ignore_patterns(root):
+    """Read .loopholeignore from the scanned root (or the scanned
+    file's directory): gitignore-style patterns, one per line. Blank
+    lines and '#' comments are ignored. A broken file warns on stderr
+    and is ignored — a scan must never die because of its ignore file.
+    Returns the pattern list (empty when no file exists).
+    """
+    base = root if os.path.isdir(root) else os.path.dirname(
+        os.path.abspath(root))
+    path = os.path.join(base, ".loopholeignore")
+    if not os.path.isfile(path):
+        return []
+    try:
+        with open(path, encoding="utf-8") as fh:
+            lines = fh.read().splitlines()
+    except OSError as exc:
+        print(f"loophole: warning: cannot read ignore file {path}: {exc}",
+              file=sys.stderr)
+        return []
+    patterns = []
+    for line in lines:
+        pat = line.strip()
+        if not pat or pat.startswith("#"):
+            continue
+        patterns.append(pat)
+    return patterns
+
+
+def ignore_match(rel, patterns):
+    """True if a gitignore-style pattern matches a '/'-separated
+    path relative to the scanned root.
+
+    - 'name' matches a file or directory name at any depth.
+    - 'path/' matches everything under that directory.
+    - '*', '?' globs match a path component ('*.min.js') or, when the
+      pattern contains '/', the relative path ('generated/*').
+    """
+    parts = rel.split("/")
+    for pat in patterns:
+        if pat.endswith("/"):
+            prefix = pat.rstrip("/")
+            if rel == prefix or rel.startswith(prefix + "/"):
+                return True
+            continue
+        if "/" not in pat:
+            if "*" in pat or "?" in pat:
+                if any(fnmatch.fnmatch(p, pat) for p in parts):
+                    return True
+            elif pat in parts:
+                return True
+            continue
+        if fnmatch.fnmatch(rel, pat):
+            return True
+    return False
+
+
+def _count_scannable(path):
+    """Count scannable source files under a directory (for the
+    ignored tally when an ignored directory is pruned from the walk)."""
+    n = 0
+    for _dirpath, _dirnames, filenames in os.walk(path):
+        for fn in filenames:
+            if detect_lang(os.path.join(_dirpath, fn)):
+                n += 1
+    return n
+
+
 def scan_file(path, config=None):
     """Scan one file. Returns a list of Findings."""
     lang = detect_lang(path)
@@ -2822,15 +2889,34 @@ def scan_file(path, config=None):
     return findings
 
 
-def iter_source_files(root, excludes):
+def iter_source_files(root, excludes, ignore_patterns=None, stats=None):
+    """Yield scannable files under root. Directory names in `excludes`
+    (plus the built-ins) are pruned; file paths matching an exclude
+    glob are skipped. Patterns from .loopholeignore are applied the
+    same way — ignored directories are pruned and their scannable
+    files counted in stats["ignored"], ignored files are skipped and
+    counted too.
+    """
     excluded = set(DEFAULT_EXCLUDES) | set(excludes or [])
+    ignore_patterns = ignore_patterns or []
     if os.path.isfile(root):
         if detect_lang(root):
             yield root
         return
     for dirpath, dirnames, filenames in os.walk(root):
-        dirnames[:] = [d for d in dirnames
-                       if d not in excluded and not d.startswith(".")]
+        rel_dir = os.path.relpath(dirpath, root)
+        keep = []
+        for d in dirnames:
+            rel = d if rel_dir == "." else rel_dir + "/" + d
+            if d in excluded or d.startswith("."):
+                continue
+            if ignore_patterns and ignore_match(rel, ignore_patterns):
+                if stats is not None:
+                    stats["ignored"] += _count_scannable(
+                        os.path.join(dirpath, d))
+                continue
+            keep.append(d)
+        dirnames[:] = keep
         for fn in filenames:
             p = os.path.join(dirpath, fn)
             if not detect_lang(p):
@@ -2839,18 +2925,26 @@ def iter_source_files(root, excludes):
             if any(fnmatch.fnmatch(rel, pat) or fnmatch.fnmatch(fn, pat)
                    for pat in (excludes or [])):
                 continue
+            if ignore_patterns and ignore_match(rel, ignore_patterns):
+                if stats is not None:
+                    stats["ignored"] += 1
+                continue
             yield p
 
 
-def scan_path(root, excludes, config=None):
+def scan_path(root, excludes, config=None, ignore_patterns=None):
+    """Scan root; returns (findings, ignored_count). --exclude and
+    config 'exclude' combine with .loopholeignore patterns."""
     findings = []
     excludes = list(excludes or [])
     if config:
         excludes += config.get("exclude", [])
-    for path in sorted(iter_source_files(root, excludes)):
+    stats = {"ignored": 0}
+    for path in sorted(iter_source_files(root, excludes, ignore_patterns,
+                                         stats)):
         findings.extend(scan_file(path, config))
     findings.sort(key=lambda f: (SEV_ORDER[f.severity], f.path, f.line))
-    return findings
+    return findings, stats["ignored"]
 
 
 # ---------------------------------------------------------------------------
@@ -2890,7 +2984,7 @@ def print_report(findings, color, min_sev="medium"):
 # Output: JSON / SARIF
 # ---------------------------------------------------------------------------
 
-def write_json(findings, out_path):
+def write_json(findings, out_path, ignored=0):
     data = {
         "tool": "loophole",
         "version": VERSION,
@@ -2900,6 +2994,7 @@ def write_json(findings, out_path):
             for s in SEVERITIES
         },
     }
+    data["summary"]["ignored"] = ignored
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
     return out_path
@@ -3173,7 +3268,9 @@ def main(argv=None):
 
     excludes = [e.strip() for e in args.exclude.split(",") if e.strip()]
     config = load_config(args.config, args.path)
-    findings = scan_path(args.path, excludes, config)
+    ignore_patterns = load_ignore_patterns(args.path)
+    findings, ignored = scan_path(args.path, excludes, config,
+                                  ignore_patterns)
 
     if args.write_baseline:
         write_baseline(findings, args.write_baseline)
@@ -3191,9 +3288,11 @@ def main(argv=None):
                     if _baseline_key(f) not in known]
 
     print_report(findings, color, args.severity)
+    if ignored:
+        print(color.dim(f"{ignored} file(s) skipped by .loopholeignore"))
 
     if args.json_out:
-        write_json(findings, args.json_out)
+        write_json(findings, args.json_out, ignored)
         print(f"JSON report: {args.json_out}")
     if args.sarif_out:
         write_sarif(findings, args.sarif_out)
