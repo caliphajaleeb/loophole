@@ -12,6 +12,7 @@ header('Access-Control-Allow-Origin: ' . $_SERVER['HTTP_ORIGIN']);
 header('X-User: ' . $_GET['name']);
 
 $reset_token = substr(md5(uniqid(rand(), true)), 0, 8);
+$otp = mt_rand(100000, 999999);
 
 if ($_POST['token'] == $stored_token) {
     echo 'in';
